@@ -1,0 +1,292 @@
+/* ============================================================
+ * xterm.js core CSS (from @xterm/xterm/css/xterm.css)
+ * Must be included — xterm.js does not inject its own styles.
+ * ============================================================ */
+
+.xterm {
+  cursor: text;
+  position: relative;
+  user-select: none;
+  -ms-user-select: none;
+  -webkit-user-select: none;
+}
+
+.xterm.focus,
+.xterm:focus {
+  outline: none;
+}
+
+.xterm .xterm-helpers {
+  position: absolute;
+  top: 0;
+  z-index: 5;
+}
+
+.xterm .xterm-helper-textarea {
+  padding: 0;
+  border: 0;
+  margin: 0;
+  position: absolute;
+  opacity: 0;
+  left: -9999em;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: -5;
+  white-space: nowrap;
+  overflow: hidden;
+  resize: none;
+}
+
+.xterm .composition-view {
+  background: #000;
+  color: #FFF;
+  display: none;
+  position: absolute;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.xterm .composition-view.active {
+  display: block;
+}
+
+.xterm .xterm-viewport {
+  background-color: #000;
+  overflow-y: scroll;
+  cursor: default;
+  position: absolute;
+  right: 0;
+  left: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.xterm .xterm-screen {
+  position: relative;
+}
+
+.xterm .xterm-screen canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.xterm .xterm-scroll-area {
+  visibility: hidden;
+}
+
+.xterm-char-measure-element {
+  display: inline-block;
+  visibility: hidden;
+  position: absolute;
+  top: 0;
+  left: -9999em;
+  line-height: normal;
+}
+
+.xterm.enable-mouse-events {
+  cursor: default;
+}
+
+.xterm.xterm-cursor-pointer,
+.xterm .xterm-cursor-pointer {
+  cursor: pointer;
+}
+
+.xterm.column-select.focus {
+  cursor: crosshair;
+}
+
+.xterm .xterm-accessibility:not(.debug),
+.xterm .xterm-message {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  z-index: 10;
+  color: transparent;
+  pointer-events: none;
+}
+
+.xterm .xterm-accessibility-tree:not(.debug) *::selection {
+  color: transparent;
+}
+
+.xterm .xterm-accessibility-tree {
+  user-select: text;
+  white-space: pre;
+}
+
+.xterm .live-region {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.xterm-dim {
+  opacity: 1 !important;
+}
+
+.xterm-underline-1 { text-decoration: underline; }
+.xterm-underline-2 { text-decoration: double underline; }
+.xterm-underline-3 { text-decoration: wavy underline; }
+.xterm-underline-4 { text-decoration: dotted underline; }
+.xterm-underline-5 { text-decoration: dashed underline; }
+
+.xterm-overline { text-decoration: overline; }
+.xterm-strikethrough { text-decoration: line-through; }
+
+.xterm-screen .xterm-decoration-container .xterm-decoration {
+  z-index: 6;
+  position: absolute;
+}
+
+.xterm-screen .xterm-decoration-container .xterm-decoration.xterm-decoration-top-layer {
+  z-index: 7;
+}
+
+.xterm-decoration-overview-ruler {
+  z-index: 8;
+  position: absolute;
+  top: 0;
+  right: 0;
+  pointer-events: none;
+}
+
+.xterm-decoration-top {
+  z-index: 2;
+  position: relative;
+}
+
+/* ============================================================
+ * Plugin styles
+ * ============================================================ */
+
+.terminal-view-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Tab bar */
+.terminal-tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  background: var(--background-secondary);
+  border-bottom: 1px solid var(--background-modifier-border);
+  flex-shrink: 0;
+}
+
+.terminal-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: transparent;
+  user-select: none;
+}
+
+.terminal-tab:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.terminal-tab.active {
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+
+.terminal-tab-label {
+  pointer-events: none;
+}
+
+.terminal-tab-close {
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.5;
+  border-radius: 2px;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.terminal-tab-close:hover {
+  opacity: 1;
+  background: var(--background-modifier-hover);
+}
+
+.terminal-new-tab {
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.terminal-new-tab:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* Rename input inline in tab */
+.terminal-tab-rename-input {
+  background: var(--background-primary);
+  color: var(--text-normal);
+  border: 1px solid var(--interactive-accent);
+  border-radius: 3px;
+  font-size: 12px;
+  padding: 1px 4px;
+  width: 100px;
+  outline: none;
+}
+
+/* Prevent Obsidian's view-content from scrolling — xterm handles its own scroll */
+.workspace-leaf-content[data-type="terminal-view"] .view-content {
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+/* Terminal host fills remaining space */
+.terminal-host {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+/* Session fills host */
+.terminal-session {
+  position: absolute;
+  inset: 0;
+}
+
+/* Constrain xterm to container */
+.terminal-session .xterm {
+  height: 100%;
+}
+
+/* Scrollbar styling */
+.terminal-session .xterm-viewport::-webkit-scrollbar {
+  width: 8px;
+}
+
+.terminal-session .xterm-viewport::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-bg);
+  border-radius: 4px;
+}
+
+.terminal-session .xterm-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
