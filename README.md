@@ -17,11 +17,14 @@ An embedded terminal panel for [Obsidian](https://obsidian.md), powered by [xter
 
 ## Installation
 
-### From Community Plugins (recommended)
+### Via BRAT (recommended)
 
-1. Open **Settings > Community Plugins > Browse**
-2. Search for **Lean Obsidian Terminal**
-3. Click **Install**, then **Enable**
+1. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin if you don't have it
+2. Open **Settings > BRAT > Add Beta Plugin**
+3. Enter: `sdkasper/lean-obsidian-terminal`
+4. Enable the plugin in **Settings > Community Plugins**
+5. Go to **Settings > Terminal > Download binaries** and click **Download** — this fetches the native terminal binary for your platform
+6. Open the terminal via the ribbon icon or command palette
 
 ### Manual Installation
 
