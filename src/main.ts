@@ -1,5 +1,5 @@
 import { FileSystemAdapter, Plugin, WorkspaceLeaf, setIcon } from "obsidian";
-import { VIEW_TYPE_TERMINAL, ICON_TERMINAL } from "./constants";
+import { VIEW_TYPE_TERMINAL } from "./constants";
 import { TerminalView } from "./terminal-view";
 import { TerminalSettingTab } from "./settings";
 import { DEFAULT_SETTINGS } from "./settings";

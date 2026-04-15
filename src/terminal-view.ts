@@ -1,5 +1,5 @@
 import { FileSystemAdapter, ItemView, WorkspaceLeaf } from "obsidian";
-import { VIEW_TYPE_TERMINAL, ICON_TERMINAL } from "./constants";
+import { VIEW_TYPE_TERMINAL } from "./constants";
 import { TerminalTabManager } from "./terminal-tab-manager";
 import type TerminalPlugin from "./main";
 
@@ -23,7 +23,7 @@ export class TerminalView extends ItemView {
   }
 
   getIcon(): string {
-    return ICON_TERMINAL;
+    return this.plugin.settings.ribbonIcon;
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await -- onOpen must satisfy Promise<void> return type of parent ItemView; no actual async work here
