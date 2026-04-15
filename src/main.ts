@@ -1,4 +1,4 @@
-import { FileSystemAdapter, Plugin, WorkspaceLeaf } from "obsidian";
+import { FileSystemAdapter, Plugin, WorkspaceLeaf, setIcon } from "obsidian";
 import { VIEW_TYPE_TERMINAL, ICON_TERMINAL } from "./constants";
 import { TerminalView } from "./terminal-view";
 import { TerminalSettingTab } from "./settings";
@@ -9,6 +9,7 @@ import { BinaryManager } from "./binary-manager";
 export default class TerminalPlugin extends Plugin {
   settings: TerminalPluginSettings = DEFAULT_SETTINGS;
   binaryManager!: BinaryManager;
+  private ribbonEl: HTMLElement | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -29,7 +30,7 @@ export default class TerminalPlugin extends Plugin {
     });
 
     // Ribbon icon
-    this.addRibbonIcon(ICON_TERMINAL, "Toggle terminal", () => {
+    this.ribbonEl = this.addRibbonIcon(this.settings.ribbonIcon, "Toggle terminal", () => {
       this.toggleTerminal();
     });
 
@@ -138,6 +139,15 @@ export default class TerminalPlugin extends Plugin {
     for (const leaf of leaves) {
       const view = leaf.view as TerminalView;
       view.updateBackgroundColor();
+    }
+  }
+
+  updateIcon(name: string): void {
+    if (this.ribbonEl) setIcon(this.ribbonEl, name);
+    for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_TERMINAL)) {
+      // leaf.tabHeaderInnerIconEl is undocumented but stable across Obsidian versions
+      const iconEl = (leaf as any).tabHeaderInnerIconEl as HTMLElement | undefined;
+      if (iconEl) setIcon(iconEl, name);
     }
   }
 }
