@@ -439,7 +439,7 @@ export class TerminalTabManager {
       theme.background = this.settings.backgroundColor;
     }
     for (const session of this.sessions) {
-      session.terminal.options.theme = { ...session.terminal.options.theme, background: theme.background };
+      session.terminal.options.theme = theme;
     }
   }
 

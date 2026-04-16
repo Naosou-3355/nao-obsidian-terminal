@@ -40,7 +40,7 @@ export class ThemeRegistry {
     } catch (err: unknown) {
       const code = (err as NodeJS.ErrnoException)?.code;
       if (code === "ENOENT") return; // No user file — built-ins only, silent.
-      this.reportFileError(`Lean Terminal: could not read ${USER_THEMES_FILENAME} (see console).`, err);
+      this.reportFileError(`Lean Terminal: Could not read ${USER_THEMES_FILENAME} (see console).`, err);
       return;
     }
 
@@ -77,7 +77,7 @@ export class ThemeRegistry {
   }
 
   get(name: string): ITheme {
-    return this.merged[name] ?? BUILTIN_THEMES["obsidian-dark"];
+    return { ...(this.merged[name] ?? BUILTIN_THEMES["obsidian-dark"]) };
   }
 
   getUserFilePath(): string {
