@@ -1,6 +1,5 @@
 import { App, Notice, PluginSettingTab, Setting, ColorComponent, setIcon } from "obsidian";
 import type TerminalPlugin from "./main";
-import { THEME_NAMES } from "./themes";
 
 export type NotificationSound = "beep" | "chime" | "ping" | "pop";
 
@@ -146,13 +145,14 @@ export class TerminalSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Theme")
       .addDropdown((dropdown) => {
-        for (const name of THEME_NAMES) {
+        for (const name of this.plugin.themeRegistry.getNames()) {
           dropdown.addOption(name, name);
         }
         dropdown.setValue(this.plugin.settings.theme);
         dropdown.onChange(async (value) => {
           this.plugin.settings.theme = value;
           await this.plugin.saveSettings();
+          this.plugin.updateTerminalBackgrounds();
         });
       });
 

@@ -3,7 +3,7 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { PtyManager } from "./pty-manager";
-import { getTheme } from "./themes";
+import type { ThemeRegistry } from "./theme-registry";
 import type { TerminalPluginSettings } from "./settings";
 import type { NotificationSound } from "./settings";
 import type { BinaryManager } from "./binary-manager";
@@ -118,6 +118,7 @@ export class TerminalTabManager {
   private cwd: string;
   private pluginDir: string;
   private binaryManager: BinaryManager;
+  private themeRegistry: ThemeRegistry;
   private onActiveChange?: () => void;
   private onTabsEmpty?: () => void;
 
@@ -128,6 +129,7 @@ export class TerminalTabManager {
     cwd: string,
     pluginDir: string,
     binaryManager: BinaryManager,
+    themeRegistry: ThemeRegistry,
     onActiveChange?: () => void,
     onTabsEmpty?: () => void
   ) {
@@ -137,6 +139,7 @@ export class TerminalTabManager {
     this.cwd = cwd;
     this.pluginDir = pluginDir;
     this.binaryManager = binaryManager;
+    this.themeRegistry = themeRegistry;
     this.onActiveChange = onActiveChange;
     this.onTabsEmpty = onTabsEmpty;
   }
@@ -150,7 +153,7 @@ export class TerminalTabManager {
     const containerEl = this.terminalHostEl.createDiv({ cls: "terminal-session" });
 
     // Create xterm.js instance
-    const theme = getTheme(this.settings.theme);
+    const theme = this.themeRegistry.get(this.settings.theme);
     if (this.settings.backgroundColor) {
       theme.background = this.settings.backgroundColor;
     }
@@ -431,7 +434,7 @@ export class TerminalTabManager {
   }
 
   updateBackgroundColor(): void {
-    const theme = getTheme(this.settings.theme);
+    const theme = this.themeRegistry.get(this.settings.theme);
     if (this.settings.backgroundColor) {
       theme.background = this.settings.backgroundColor;
     }

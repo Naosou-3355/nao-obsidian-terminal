@@ -282,13 +282,3 @@ export const BUILTIN_THEMES: Record<string, ITheme> = {
     brightWhite: "#d3c6aa",
   },
 };
-
-/**
- * Back-compat exports used by existing callsites. These will be removed in
- * a later task once callsites migrate to the ThemeRegistry.
- */
-export const THEME_NAMES = Object.keys(BUILTIN_THEMES);
-
-export function getTheme(name: string): ITheme {
-  return BUILTIN_THEMES[name] || BUILTIN_THEMES["obsidian-dark"];
-}
