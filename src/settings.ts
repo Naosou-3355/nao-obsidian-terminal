@@ -144,6 +144,9 @@ export class TerminalSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Theme")
+      .setDesc(
+        "Color scheme for the terminal. Add custom themes by editing themes.json in the plugin folder."
+      )
       .addDropdown((dropdown) => {
         for (const name of this.plugin.themeRegistry.getNames()) {
           dropdown.addOption(name, name);
@@ -154,6 +157,18 @@ export class TerminalSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
           this.plugin.updateTerminalBackgrounds();
         });
+      })
+      .addButton((btn) => {
+        btn
+          .setButtonText("Open themes folder")
+          .setTooltip("Open the plugin folder so you can create or edit themes.json")
+          .onClick(async () => {
+            // Inline type: electron isn't declared as a dependency, so typeof import("electron") doesn't resolve.
+            const { shell } = window.require("electron") as {
+              shell: { openPath: (path: string) => Promise<string> };
+            };
+            await shell.openPath(this.plugin.themeRegistry.getPluginDir());
+          });
       });
 
     const iconSetting = new Setting(containerEl)
