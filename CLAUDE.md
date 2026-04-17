@@ -69,12 +69,15 @@ Stored in the Obsidian vault at `$VAULT_PATH/01 Projects/LP Products/Lean Obsidi
    - Validation check: Are existing user settings migrated/handled if schema changes? No data loss on upgrade?
    - Example: Adding new shell options, changing config serialization, theme storage changes
 
-**Executor-Only Tier** — Fast iteration without advisor review:
+**Executor-Only Tier** — Default fast path, escalate if needed:
+Default fast path — implement with Haiku, no mandatory Opus gate. Escalate to Opus if implementation reveals the change touches Tier 1 concerns or unexpected complexity:
 - Terminal UI/UX tweaks (xterm.js styling, tab appearance, resize behavior)
 - Theme additions or color refinements
 - Shell detection improvements (non-breaking, additive)
 - Error messages, logging, documentation
 - Tests (once framework is added)
+
+**When to escalate:** If the change interacts with plugin lifecycle, affects PTY session management, alters platform-specific behavior, or has unintended side effects on Electron's require() chain → pause and request Opus validation before merge.
 
 **Implementation Pattern:**
 1. Haiku executor implements the full change
