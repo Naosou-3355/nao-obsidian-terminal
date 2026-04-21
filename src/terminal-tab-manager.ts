@@ -4,7 +4,8 @@ import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { PtyManager } from "./pty-manager";
-import { getTheme, isObsidianDark } from "./themes";
+import type { ThemeRegistry } from "./theme-registry";
+import { isObsidianDark } from "./themes";
 import type { TerminalPluginSettings } from "./settings";
 import type { NotificationSound } from "./settings";
 import type { BinaryManager } from "./binary-manager";
@@ -142,8 +143,8 @@ function sessionBackground(session: TerminalSession): string {
   return (session.terminal.options.theme?.background) || "#1e1e1e";
 }
 
-function resolveTerminalTheme(settings: TerminalPluginSettings) {
-  const theme = getTheme(settings.theme);
+function resolveTerminalTheme(settings: TerminalPluginSettings, registry: ThemeRegistry) {
+  const theme = registry.get(settings.theme);
   if (settings.backgroundColor) {
     theme.background = settings.backgroundColor;
   }
@@ -207,6 +208,7 @@ export class TerminalTabManager {
   private cwd: string;
   private pluginDir: string;
   private binaryManager: BinaryManager;
+  private themeRegistry: ThemeRegistry;
   private onActiveChange?: () => void;
   private onTabsEmpty?: () => void;
   private dragSrcId: string | null = null;
@@ -218,6 +220,7 @@ export class TerminalTabManager {
     cwd: string,
     pluginDir: string,
     binaryManager: BinaryManager,
+    themeRegistry: ThemeRegistry,
     onActiveChange?: () => void,
     onTabsEmpty?: () => void
   ) {
@@ -227,6 +230,7 @@ export class TerminalTabManager {
     this.cwd = cwd;
     this.pluginDir = pluginDir;
     this.binaryManager = binaryManager;
+    this.themeRegistry = themeRegistry;
     this.onActiveChange = onActiveChange;
     this.onTabsEmpty = onTabsEmpty;
   }
@@ -240,7 +244,7 @@ export class TerminalTabManager {
     const containerEl = this.terminalHostEl.createDiv({ cls: "terminal-session" });
 
     // Create xterm.js instance
-    const theme = resolveTerminalTheme(this.settings);
+    const theme = resolveTerminalTheme(this.settings, this.themeRegistry);
     const terminal = new Terminal({
       fontSize: this.settings.fontSize,
       fontFamily: this.settings.fontFamily,
@@ -532,15 +536,15 @@ export class TerminalTabManager {
   }
 
   updateBackgroundColor(): void {
-    const theme = resolveTerminalTheme(this.settings);
+    const theme = resolveTerminalTheme(this.settings, this.themeRegistry);
     for (const session of this.sessions) {
-      session.terminal.options.theme = { ...session.terminal.options.theme, background: theme.background };
+      session.terminal.options.theme = theme;
     }
   }
 
   /** Re-apply the full theme to all sessions (used when Obsidian switches dark/light). */
   updateTheme(): void {
-    const theme = resolveTerminalTheme(this.settings);
+    const theme = resolveTerminalTheme(this.settings, this.themeRegistry);
     const isDark = isObsidianDark();
     for (const session of this.sessions) {
       session.terminal.options.theme = theme;

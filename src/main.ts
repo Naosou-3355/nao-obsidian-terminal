@@ -3,10 +3,12 @@ import { VIEW_TYPE_TERMINAL } from "./constants";
 import { TerminalView } from "./terminal-view";
 import { TerminalSettingTab, DEFAULT_SETTINGS, type TerminalPluginSettings } from "./settings";
 import { BinaryManager } from "./binary-manager";
+import { ThemeRegistry } from "./theme-registry";
 
 export default class TerminalPlugin extends Plugin {
   settings: TerminalPluginSettings = DEFAULT_SETTINGS;
   binaryManager!: BinaryManager;
+  themeRegistry!: ThemeRegistry;
   private ribbonEl: HTMLElement | null = null;
   private themeObserver: MutationObserver | null = null;
 
@@ -22,6 +24,10 @@ export default class TerminalPlugin extends Plugin {
     );
     this.binaryManager = new BinaryManager(pluginDir);
     this.binaryManager.checkInstalled();
+
+    // Theme registry — loads optional themes.json from the plugin folder
+    this.themeRegistry = new ThemeRegistry(pluginDir);
+    await this.themeRegistry.load();
 
     // Register the terminal view
     this.registerView(VIEW_TYPE_TERMINAL, (leaf: WorkspaceLeaf) => {
