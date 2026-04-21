@@ -282,3 +282,8 @@ export const BUILTIN_THEMES: Record<string, ITheme> = {
     brightWhite: "#d3c6aa",
   },
 };
+
+/** Detect whether Obsidian is currently in dark mode. */
+export function isObsidianDark(): boolean {
+  return document.body.classList.contains("theme-dark");
+}

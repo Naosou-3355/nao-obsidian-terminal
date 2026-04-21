@@ -1,6 +1,6 @@
 import { Notice } from "obsidian";
 import type { ITheme } from "@xterm/xterm";
-import { BUILTIN_THEMES } from "./themes";
+import { BUILTIN_THEMES, isObsidianDark } from "./themes";
 
 const USER_THEMES_FILENAME = "themes.json";
 const HEX6_RE = /^#[0-9a-fA-F]{6}$/;
@@ -77,6 +77,10 @@ export class ThemeRegistry {
   }
 
   get(name: string): ITheme {
+    if (name === "system") {
+      const resolved = isObsidianDark() ? "obsidian-dark" : "obsidian-light";
+      return { ...(this.merged[resolved] ?? BUILTIN_THEMES["obsidian-dark"]) };
+    }
     return { ...(this.merged[name] ?? BUILTIN_THEMES["obsidian-dark"]) };
   }
 
