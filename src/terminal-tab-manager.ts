@@ -309,7 +309,12 @@ export class TerminalTabManager {
     });
 
     const fitAddon = new FitAddon();
-    const webLinksAddon = new WebLinksAddon();
+    const webLinksAddon = new WebLinksAddon((event, uri) => {
+      const { shell } = window.require("electron") as {
+        shell: { openExternal: (url: string) => Promise<void> };
+      };
+      void shell.openExternal(uri);
+    });
     const unicode11Addon = new Unicode11Addon();
 
     terminal.loadAddon(fitAddon);

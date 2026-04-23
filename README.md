@@ -14,7 +14,7 @@ An embedded terminal panel for [Obsidian](https://obsidian.md), powered by [xter
 - Emoji and wide character rendering with correct Unicode 11 width tables
 - Drag a file from the Obsidian file explorer or Windows Explorer to insert its path into the terminal
 - Customizable ribbon and panel tab icon (any Lucide icon name)
-- Clickable URLs in terminal output
+- Clickable URLs in terminal output - Ctrl+click to open in your system browser
 - Auto-resize on panel resize
 - Opens at vault root by default
 - Clipboard support: Ctrl+V / Cmd+V paste, Ctrl+C / Cmd+C copy (with selection), optional copy-on-select
