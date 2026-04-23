@@ -9,8 +9,8 @@ interface BinaryManifest {
   installedAt: string;
 }
 
-const REPO_OWNER = "sdkasper";
-const REPO_NAME = "lean-obsidian-terminal";
+const REPO_OWNER = "Naosou-3355";
+const REPO_NAME = "nao-obsidian-terminal";
 
 // Patched ConoutConnection for Windows — replaces Worker-based implementation
 // with inline socket piping (Worker threads unavailable in Obsidian's renderer).
