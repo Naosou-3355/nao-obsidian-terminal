@@ -212,7 +212,7 @@ export class TerminalSettingTab extends PluginSettingTab {
           const count = this.plugin.themeRegistry.getNames().length;
           const errors = this.plugin.themeRegistry.getUserLoadErrors();
           if (errors.length === 0) {
-            new Notice(`Lean Terminal: Themes reloaded (${count} total).`);
+            new Notice(`Nao's Terminal: Themes reloaded (${count} total).`);
           }
           // If there were errors, the registry's load() already showed its own Notice.
         });
@@ -389,6 +389,6 @@ export class TerminalSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Plugin version")
-      .setDesc(`Lean Obsidian Terminal v${this.plugin.manifest.version}`);
+      .setDesc(`Nao's Terminal v${this.plugin.manifest.version}`);
   }
 }

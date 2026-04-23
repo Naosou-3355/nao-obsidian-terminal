@@ -40,7 +40,7 @@ export class ThemeRegistry {
     } catch (err: unknown) {
       const code = (err as NodeJS.ErrnoException)?.code;
       if (code === "ENOENT") return; // No user file — built-ins only, silent.
-      this.reportFileError(`Lean Terminal: Could not read ${USER_THEMES_FILENAME} (see console).`, err);
+      this.reportFileError(`Nao's Terminal: Could not read ${USER_THEMES_FILENAME} (see console).`, err);
       return;
     }
 
@@ -48,13 +48,13 @@ export class ThemeRegistry {
     try {
       parsed = JSON.parse(raw);
     } catch (err: unknown) {
-      this.reportFileError(`Lean Terminal: ${USER_THEMES_FILENAME} is not valid JSON (see console).`, err);
+      this.reportFileError(`Nao's Terminal: ${USER_THEMES_FILENAME} is not valid JSON (see console).`, err);
       return;
     }
 
     if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
       this.reportFileError(
-        `Lean Terminal: ${USER_THEMES_FILENAME} must be a JSON object keyed by theme name.`,
+        `Nao's Terminal: ${USER_THEMES_FILENAME} must be a JSON object keyed by theme name.`,
         parsed
       );
       return;
@@ -67,7 +67,7 @@ export class ThemeRegistry {
 
     if (this.userLoadErrors.length > 0) {
       new Notice(
-        `Lean Terminal: ${this.userLoadErrors.length} custom theme(s) failed to load — see console for details.`
+        `Nao's Terminal: ${this.userLoadErrors.length} custom theme(s) failed to load — see console for details.`
       );
     }
   }

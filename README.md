@@ -1,4 +1,4 @@
-# Lean Terminal
+# Nao's Terminal
 
 An embedded terminal panel for [Obsidian](https://obsidian.md), powered by [xterm.js](https://xtermjs.org/) and [node-pty](https://github.com/nicedoc/node-pty). Run shell commands directly inside your vault workspace — no external windows needed.
 
@@ -30,7 +30,7 @@ An embedded terminal panel for [Obsidian](https://obsidian.md), powered by [xter
 
 1. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin if you don't have it
 2. Open **Settings > BRAT > Add Beta Plugin**
-3. Enter: `sdkasper/lean-obsidian-terminal`
+3. Enter: `Naosou-3355/nao-obsidian-terminal`
 4. Enable the plugin in **Settings > Community Plugins**
 5. Go to **Settings > Terminal > Download binaries** and click **Download** — this fetches the native terminal binary for your platform
 6. Open the terminal via the ribbon icon or command palette
@@ -75,7 +75,7 @@ An embedded terminal panel for [Obsidian](https://obsidian.md), powered by [xter
 
 ## Custom themes
 
-The plugin ships with 12 built-in color schemes selectable from **Settings → Appearance & behavior → Theme**. You can add your own by editing `themes.json` in the plugin folder (`<vault>/.obsidian/plugins/lean-terminal/themes.json`).
+The plugin ships with 12 built-in color schemes selectable from **Settings → Appearance & behavior → Theme**. You can add your own by editing `themes.json` in the plugin folder (`<vault>/.obsidian/plugins/naos-terminal/themes.json`).
 
 Use **Open themes folder** in settings to jump straight to it. The file is a plain JSON object keyed by theme name; user themes override built-ins of the same name.
 
@@ -105,10 +105,10 @@ On Windows, the plugin uses ConPTY (via a patched ConoutConnection that avoids W
 
 Use this repo to report bugs, request features, or ask questions.
 
-- [Report a Bug](https://github.com/sdkasper/lean-obsidian-terminal/issues/new?assignees=&labels=bug&template=bug_report.md)
-- [Request a Feature](https://github.com/sdkasper/lean-obsidian-terminal/issues/new?assignees=&labels=enhancement&template=feature_request.md)
-- [Report a Performance Issue](https://github.com/sdkasper/lean-obsidian-terminal/issues/new?assignees=&labels=performance&template=performance_issue.md)
-- [Ask a Question / Share Feedback](https://github.com/sdkasper/lean-obsidian-terminal/discussions)
+- [Report a Bug](https://github.com/Naosou-3355/nao-obsidian-terminal/issues/new?assignees=&labels=bug&template=bug_report.md)
+- [Request a Feature](https://github.com/Naosou-3355/nao-obsidian-terminal/issues/new?assignees=&labels=enhancement&template=feature_request.md)
+- [Report a Performance Issue](https://github.com/Naosou-3355/nao-obsidian-terminal/issues/new?assignees=&labels=performance&template=performance_issue.md)
+- [Ask a Question / Share Feedback](https://github.com/Naosou-3355/nao-obsidian-terminal/discussions)
 
 ## Development
 

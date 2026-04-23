@@ -9,7 +9,7 @@ import { cpSync, mkdirSync, existsSync } from "fs";
 import { resolve, join } from "path";
 
 const vaultPath = process.argv[2] || "D:\\LOS Test";
-const pluginDir = join(vaultPath, ".obsidian", "plugins", "lean-terminal");
+const pluginDir = join(vaultPath, ".obsidian", "plugins", "naos-terminal");
 
 if (!existsSync(join(vaultPath, ".obsidian"))) {
   console.error(`Error: ${vaultPath} does not appear to be an Obsidian vault (no .obsidian folder)`);
@@ -81,4 +81,4 @@ if (existsSync(nodePtySrc)) {
 }
 
 console.log(`\nPlugin installed to: ${pluginDir}`);
-console.log("Restart Obsidian and enable the 'Terminal' plugin in Settings > Community Plugins.");
+console.log("Restart Obsidian and enable the \"Nao's Terminal\" plugin in Settings > Community Plugins.");

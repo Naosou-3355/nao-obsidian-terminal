@@ -1,5 +1,5 @@
 {
-  "name": "lean-terminal",
+  "name": "naos-terminal",
   "version": "0.9.4",
   "description": "Embedded terminal for Obsidian using xterm.js and node-pty",
   "main": "main.js",
