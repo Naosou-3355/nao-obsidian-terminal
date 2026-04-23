@@ -1,6 +1,6 @@
 {
   "name": "naos-terminal",
-  "version": "0.9.4",
+  "version": "1.0.0",
   "description": "Embedded terminal for Obsidian using xterm.js and node-pty",
   "main": "main.js",
   "scripts": {
