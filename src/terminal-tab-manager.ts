@@ -1,4 +1,4 @@
-import { Notice, App } from "obsidian";
+import { Notice, App, FileSystemAdapter } from "obsidian";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
@@ -209,6 +209,11 @@ function quotePath(rawPath: string, shellPath: string): string {
   return `"${rawPath}"`;
 }
 
+interface ElectronFile extends File { path?: string; }
+interface ObsidianAppInternal extends App {
+  dragManager?: { draggable?: { file?: { path: string } } };
+}
+
 function extractDropPath(e: DragEvent, app: App): string | null {
   // OS file drag via text/uri-list (file:// URLs in Electron)
   const uriList = e.dataTransfer?.getData('text/uri-list');
@@ -224,19 +229,19 @@ function extractDropPath(e: DragEvent, app: App): string | null {
   if (e.dataTransfer?.files.length) {
     const file = e.dataTransfer.files[0];
     try {
-      const { webUtils } = (window as any).require('electron');
+      const { webUtils } = window.require('electron') as { webUtils: { getPathForFile: (file: File) => string } };
       const p = webUtils.getPathForFile(file);
       if (p) return p;
     } catch {
-      const p = (file as any).path;
+      const p = (file as ElectronFile).path;
       if (p) return p;
     }
   }
 
   // Obsidian internal file drag
-  const draggable = (app as any).dragManager?.draggable;
+  const draggable = (app as ObsidianAppInternal).dragManager?.draggable;
   if (draggable?.file) {
-    const basePath = (app.vault.adapter as any).basePath;
+    const basePath = (app.vault.adapter as FileSystemAdapter).getBasePath();
     const vaultPath = draggable.file.path.split('/').join(window.require('path').sep);
     const fullPath = window.require('path').join(basePath, vaultPath);
     return fullPath;
@@ -319,14 +324,14 @@ export class TerminalTabManager {
 
     const isFileDrag = (e: DragEvent): boolean =>
       !!e.dataTransfer?.types.includes('Files') ||
-      !!(this.app as any).dragManager?.draggable;
+      !!(this.app as ObsidianAppInternal).dragManager?.draggable;
 
     const showLabel = (e: DragEvent) => {
-      dragLabel.style.display = 'block';
+      dragLabel.addClass('terminal-drag-label-visible');
       dragLabel.style.left = `${e.clientX + 14}px`;
       dragLabel.style.top = `${e.clientY + 14}px`;
     };
-    const hideLabel = () => { dragLabel.style.display = 'none'; };
+    const hideLabel = () => { dragLabel.removeClass('terminal-drag-label-visible'); };
 
     containerEl.addEventListener('dragenter', (e) => {
       if (!isFileDrag(e)) return;
@@ -350,7 +355,6 @@ export class TerminalTabManager {
       hideLabel();
 
       const path = extractDropPath(e, this.app);
-      console.log('Extracted path:', path);
       if (!path) return;
       pty.write(quotePath(path, pty.shellPath));
     });

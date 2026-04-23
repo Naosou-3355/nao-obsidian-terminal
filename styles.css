@@ -402,3 +402,7 @@
   pointer-events: none;
   z-index: 9999;
 }
+
+.terminal-drag-label-visible {
+  display: block;
+}
