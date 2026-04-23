@@ -13,12 +13,12 @@ import type { IDisposable } from "@xterm/xterm";
 
 export const TAB_COLORS = [
   { name: "None", value: "" },
-  { name: "Red", value: "#e54d4d" },
-  { name: "Orange", value: "#e8a838" },
-  { name: "Yellow", value: "#e5d74e" },
-  { name: "Green", value: "#4ec955" },
-  { name: "Blue", value: "#4e9de5" },
-  { name: "Purple", value: "#b04ee5" },
+  { name: "Vermilion", value: "#FC3634" },
+  { name: "Sky Blue", value: "#25D0F7" },
+  { name: "Gold", value: "#FFD700" },
+  { name: "Mint", value: "#18BC9C" },
+  { name: "Azure", value: "#007BFF" },
+  { name: "Purple", value: "#A991D4" },
 ] as const;
 
 export interface TerminalSession {
