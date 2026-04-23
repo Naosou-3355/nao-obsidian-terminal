@@ -405,6 +405,12 @@ export class TerminalTabManager {
     // Register terminal color reporting (OSC 10/11, Mode 2031)
     registerColorReporting(session);
 
+    terminal.onSelectionChange(() => {
+      if (!this.settings.copyOnSelect) return;
+      const text = terminal.getSelection();
+      if (text) navigator.clipboard.writeText(text);
+    });
+
     this.sessions.push(session);
     this.switchTab(id);
     this.renderTabBar();
@@ -501,9 +507,12 @@ export class TerminalTabManager {
       }
     }
 
-    if (this.sessions.length === 0 && this.onTabsEmpty) {
-      this.onTabsEmpty();
-      return;
+    if (this.sessions.length === 0) {
+      sessionCounter = 0;
+      if (this.onTabsEmpty) {
+        this.onTabsEmpty();
+        return;
+      }
     }
 
     this.renderTabBar();
@@ -539,6 +548,7 @@ export class TerminalTabManager {
     }
     this.sessions = [];
     this.activeId = null;
+    sessionCounter = 0;
   }
 
   private notifyCompletion(session: TerminalSession, exitCode: number): void {
@@ -653,6 +663,10 @@ export class TerminalTabManager {
         session.pty.write(`${ESC}[?997;${mode}n`);
       }
     }
+  }
+
+  updateCopyOnSelect(): void {
+    // no-op: onSelectionChange listeners read this.settings.copyOnSelect at call time
   }
 
   private renderTabBar(): void {

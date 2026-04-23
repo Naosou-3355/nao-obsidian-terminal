@@ -364,8 +364,9 @@
   height: 100%;
 }
 
-/* Scrollbar styling */
+/* Scrollbar styling — display:block overrides Obsidian's global scrollbar hide */
 .terminal-session .xterm-viewport::-webkit-scrollbar {
+  display: block;
   width: 8px;
 }
 

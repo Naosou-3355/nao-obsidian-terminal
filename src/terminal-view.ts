@@ -101,4 +101,8 @@ export class TerminalView extends ItemView {
   updateTheme(): void {
     this.tabManager?.updateTheme();
   }
+
+  updateCopyOnSelect(): void {
+    this.tabManager?.updateCopyOnSelect();
+  }
 }

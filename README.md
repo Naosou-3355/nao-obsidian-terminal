@@ -17,7 +17,8 @@ An embedded terminal panel for [Obsidian](https://obsidian.md), powered by [xter
 - Clickable URLs in terminal output
 - Auto-resize on panel resize
 - Opens at vault root by default
-- Clipboard support: Ctrl+V / Cmd+V paste, Ctrl+C / Cmd+C copy (with selection)
+- Clipboard support: Ctrl+V / Cmd+V paste, Ctrl+C / Cmd+C copy (with selection), optional copy-on-select
+- Visible scrollbar in the terminal viewport for quick navigation
 - Notification sounds when background tab commands finish (4 sound types, adjustable volume)
 - Shift+Enter inserts a newline instead of submitting (muscle memory friendly for Claude Code users)
 - Custom background color override with color picker (match your vault theme)
@@ -64,6 +65,7 @@ An embedded terminal panel for [Obsidian](https://obsidian.md), powered by [xter
 | Theme | Obsidian Dark | Color theme for the terminal |
 | Icon | terminal | Lucide icon name for the ribbon and panel tab icon |
 | Cursor blink | On | Whether the cursor blinks |
+| Copy on select | Off | Automatically copy selected text to the clipboard |
 | Scrollback | 5000 | Number of lines kept in scroll history |
 | Background color | Theme default | Override the theme background with any CSS color (hex, RGB, etc.) |
 | Default location | Bottom | Where new terminal panels open (Bottom or Right) |

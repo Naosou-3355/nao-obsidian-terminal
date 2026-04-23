@@ -10,6 +10,7 @@ export interface TerminalPluginSettings {
   theme: string;
   backgroundColor: string;
   cursorBlink: boolean;
+  copyOnSelect: boolean;
   scrollback: number;
   ribbonIcon: string;
   defaultLocation: "right" | "bottom";
@@ -25,6 +26,7 @@ export const DEFAULT_SETTINGS: TerminalPluginSettings = {
   theme: "obsidian-dark",
   backgroundColor: "",
   cursorBlink: true,
+  copyOnSelect: false,
   scrollback: 5000,
   ribbonIcon: "terminal",
   defaultLocation: "bottom",
@@ -55,7 +57,7 @@ export class TerminalSettingTab extends PluginSettingTab {
 
     let statusDesc: string;
     if (status === "ready") {
-      statusDesc = `Installed (v${version}) \u2014 ${platform}-${arch}`;
+      statusDesc = `node-pty v${version} installed \u2014 ${platform}-${arch}`;
     } else if (status === "error") {
       statusDesc = `Error: ${bm.getStatusMessage()}`;
     } else if (status === "downloading") {
@@ -303,6 +305,17 @@ export class TerminalSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
+      .setName("Copy on select")
+      .setDesc("Automatically copy selected text to the clipboard")
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.copyOnSelect).onChange(async (value) => {
+          this.plugin.settings.copyOnSelect = value;
+          await this.plugin.saveSettings();
+          this.plugin.updateCopyOnSelect();
+        })
+      );
+
+    new Setting(containerEl)
       .setName("Scrollback lines")
       .addText((text) =>
         text
@@ -370,5 +383,12 @@ export class TerminalSettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           })
       );
+
+    // --- About ---
+    new Setting(containerEl).setName("About").setHeading();
+
+    new Setting(containerEl)
+      .setName("Plugin version")
+      .setDesc(`Lean Obsidian Terminal v${this.plugin.manifest.version}`);
   }
 }

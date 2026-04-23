@@ -181,4 +181,12 @@ export default class TerminalPlugin extends Plugin {
       view.updateTheme();
     }
   }
+
+  updateCopyOnSelect(): void {
+    const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_TERMINAL);
+    for (const leaf of leaves) {
+      const view = leaf.view as TerminalView;
+      view.updateCopyOnSelect();
+    }
+  }
 }
