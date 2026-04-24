@@ -369,11 +369,19 @@ export class TerminalTabManager {
       if (e.type !== "keydown") return true;
       const mod = e.metaKey || e.ctrlKey;
 
-      // Shift+Enter: send newline without submitting
-      if (e.shiftKey && e.key === "Enter") {
+      // Shift+Enter (or plain Enter in cmdEnterToSubmit mode): send newline without submitting
+      if (e.key === "Enter" && (e.shiftKey || (this.settings.cmdEnterToSubmit && !mod))) {
         e.preventDefault();
         const s = this.sessions.find((s) => s.id === id);
         if (s) s.pty.write("\n");
+        return false;
+      }
+
+      // Cmd+Enter / Ctrl+Enter: submit when cmdEnterToSubmit mode is on
+      if (mod && e.key === "Enter" && this.settings.cmdEnterToSubmit) {
+        e.preventDefault();
+        const s = this.sessions.find((s) => s.id === id);
+        if (s) s.pty.write("\r");
         return false;
       }
 

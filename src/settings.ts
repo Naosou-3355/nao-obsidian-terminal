@@ -12,6 +12,7 @@ export interface TerminalPluginSettings {
   cursorBlink: boolean;
   copyOnSelect: boolean;
   cmdASelectAll: boolean;
+  cmdEnterToSubmit: boolean;
   scrollback: number;
   ribbonIcon: string;
   defaultLocation: "right" | "bottom";
@@ -29,6 +30,7 @@ export const DEFAULT_SETTINGS: TerminalPluginSettings = {
   cursorBlink: true,
   copyOnSelect: false,
   cmdASelectAll: false,
+  cmdEnterToSubmit: false,
   scrollback: 5000,
   ribbonIcon: "terminal",
   defaultLocation: "bottom",
@@ -323,6 +325,16 @@ export class TerminalSettingTab extends PluginSettingTab {
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.cmdASelectAll).onChange(async (value) => {
           this.plugin.settings.cmdASelectAll = value;
+          await this.plugin.saveSettings();
+        })
+      );
+
+    new Setting(containerEl)
+      .setName("Cmd+Enter to submit")
+      .setDesc("Enter adds a line break; ⌘Enter (Mac) / Ctrl+Enter (Windows/Linux) submits the command")
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.cmdEnterToSubmit).onChange(async (value) => {
+          this.plugin.settings.cmdEnterToSubmit = value;
           await this.plugin.saveSettings();
         })
       );
