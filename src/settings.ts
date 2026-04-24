@@ -11,6 +11,7 @@ export interface TerminalPluginSettings {
   backgroundColor: string;
   cursorBlink: boolean;
   copyOnSelect: boolean;
+  cmdASelectAll: boolean;
   scrollback: number;
   ribbonIcon: string;
   defaultLocation: "right" | "bottom";
@@ -27,6 +28,7 @@ export const DEFAULT_SETTINGS: TerminalPluginSettings = {
   backgroundColor: "",
   cursorBlink: true,
   copyOnSelect: false,
+  cmdASelectAll: false,
   scrollback: 5000,
   ribbonIcon: "terminal",
   defaultLocation: "bottom",
@@ -312,6 +314,16 @@ export class TerminalSettingTab extends PluginSettingTab {
           this.plugin.settings.copyOnSelect = value;
           await this.plugin.saveSettings();
           this.plugin.updateCopyOnSelect();
+        })
+      );
+
+    new Setting(containerEl)
+      .setName("Cmd+A selects all")
+      .setDesc("⌘A (Mac) / Ctrl+A (Windows/Linux) selects all terminal text instead of sending the default keystroke")
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.cmdASelectAll).onChange(async (value) => {
+          this.plugin.settings.cmdASelectAll = value;
+          await this.plugin.saveSettings();
         })
       );
 

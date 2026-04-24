@@ -396,6 +396,13 @@ export class TerminalTabManager {
         return false;
       }
 
+      // Select all: Cmd+A / Ctrl+A
+      if (mod && e.key === "a" && this.settings.cmdASelectAll) {
+        e.preventDefault();
+        terminal.selectAll();
+        return false;
+      }
+
       return true;
     });
 
