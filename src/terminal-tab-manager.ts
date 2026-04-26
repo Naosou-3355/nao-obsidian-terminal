@@ -34,6 +34,8 @@ export interface TerminalSession {
   /** Disposables for parser handlers (cleaned up on tab close). */
   parserDisposables: IDisposable[];
   dragLabel: HTMLElement;
+  /** Absolute buffer row/col where user input starts (just after the prompt). */
+  inputStart: { x: number; y: number };
 }
 
 let sessionCounter = 0;
@@ -404,10 +406,19 @@ export class TerminalTabManager {
         return false;
       }
 
-      // Select all: Cmd+A / Ctrl+A
+      // Select all input: Cmd+A / Ctrl+A — selects from prompt end to cursor
       if (mod && e.key === "a" && this.settings.cmdASelectAll) {
         e.preventDefault();
-        terminal.selectAll();
+        const s = this.sessions.find((s) => s.id === id);
+        if (s) {
+          const buf = terminal.buffer.active;
+          const cursorAbsY = buf.baseY + buf.cursorY;
+          const startAbsY = s.inputStart.y;
+          const startX = s.inputStart.x;
+          const endX = buf.cursorX;
+          const length = (cursorAbsY - startAbsY) * terminal.cols + endX - startX;
+          if (length > 0) terminal.select(startX, startAbsY, length);
+        }
         return false;
       }
 
@@ -420,10 +431,49 @@ export class TerminalTabManager {
       mode2031: false,
       parserDisposables: [],
       dragLabel,
+      inputStart: { x: 0, y: 0 },
     };
 
     // Register terminal color reporting (OSC 10/11, Mode 2031)
     registerColorReporting(session);
+
+    // Cmd+Enter on Mac: Obsidian intercepts metaKey+Enter at the document level
+    // before xterm.js sees it, so we need a capture-phase listener here.
+    const cmdEnterHandler = (e: KeyboardEvent) => {
+      if (!this.settings.cmdEnterToSubmit || e.key !== "Enter" || !e.metaKey) return;
+      if (!containerEl.contains(document.activeElement)) return;
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      pty.write("\r");
+    };
+    document.addEventListener("keydown", cmdEnterHandler, { capture: true });
+    session.parserDisposables.push({ dispose: () => document.removeEventListener("keydown", cmdEnterHandler, { capture: true }) });
+
+    // Click-to-cursor: on a plain click on the input row, move the shell cursor
+    // to the clicked column by sending arrow-key sequences to the PTY.
+    let clickStartX = 0, clickStartY = 0;
+    containerEl.addEventListener("mousedown", (e: MouseEvent) => {
+      clickStartX = e.clientX;
+      clickStartY = e.clientY;
+    });
+    containerEl.addEventListener("mouseup", (e: MouseEvent) => {
+      if (e.button !== 0) return;
+      if (Math.abs(e.clientX - clickStartX) > 4 || Math.abs(e.clientY - clickStartY) > 4) return;
+      const buf = terminal.buffer.active;
+      const core = (terminal as any)._core;
+      const dims = core._renderService?.dimensions?.css?.cell as { width?: number; height?: number } | undefined;
+      if (!dims?.width || !dims?.height) return;
+      const screenEl = containerEl.querySelector(".xterm-screen") as HTMLElement | null;
+      if (!screenEl) return;
+      const rect = screenEl.getBoundingClientRect();
+      const clickCol = Math.floor((e.clientX - rect.left) / dims.width);
+      const clickRow = Math.floor((e.clientY - rect.top) / dims.height);
+      if (clickRow !== buf.cursorY) return;
+      const delta = clickCol - buf.cursorX;
+      if (delta === 0) return;
+      const seq = delta > 0 ? "\x1b[C" : "\x1b[D";
+      pty.write(seq.repeat(Math.min(Math.abs(delta), terminal.cols)));
+    });
 
     terminal.onSelectionChange(() => {
       if (!this.settings.copyOnSelect) return;
@@ -461,9 +511,16 @@ export class TerminalTabManager {
         return;
       }
 
-      // Wire data: PTY -> xterm
+      // Wire data: PTY -> xterm; debounce to record prompt-end position for Cmd+A
+      let inputStartTimer: ReturnType<typeof setTimeout> | null = null;
       pty.onData((data: string) => {
         terminal.write(data);
+        if (inputStartTimer) clearTimeout(inputStartTimer);
+        inputStartTimer = setTimeout(() => {
+          const buf = terminal.buffer.active;
+          session.inputStart = { x: buf.cursorX, y: buf.baseY + buf.cursorY };
+          inputStartTimer = null;
+        }, 50);
       });
 
       // Wire data: xterm -> PTY
