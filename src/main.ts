@@ -1,14 +1,16 @@
-import { FileSystemAdapter, Plugin, WorkspaceLeaf, setIcon } from "obsidian";
+import { FileSystemAdapter, Notice, Plugin, WorkspaceLeaf, setIcon } from "obsidian";
 import { VIEW_TYPE_TERMINAL } from "./constants";
 import { TerminalView } from "./terminal-view";
 import { TerminalSettingTab, DEFAULT_SETTINGS, type TerminalPluginSettings } from "./settings";
 import { BinaryManager } from "./binary-manager";
 import { ThemeRegistry } from "./theme-registry";
+import { OhMyPoshManager } from "./oh-my-posh-manager";
 
 export default class TerminalPlugin extends Plugin {
   settings: TerminalPluginSettings = DEFAULT_SETTINGS;
   binaryManager!: BinaryManager;
   themeRegistry!: ThemeRegistry;
+  ompManager!: OhMyPoshManager;
   private ribbonEl: HTMLElement | null = null;
   private themeObserver: MutationObserver | null = null;
 
@@ -28,6 +30,11 @@ export default class TerminalPlugin extends Plugin {
     // Theme registry — loads optional themes.json from the plugin folder
     this.themeRegistry = new ThemeRegistry(pluginDir);
     await this.themeRegistry.load();
+
+    // Oh My Posh manager — manages the prompt-theming binary + themes catalog
+    this.ompManager = new OhMyPoshManager(pluginDir);
+    const detected = this.ompManager.checkInstalled();
+    this.maybeOfferOmpEnable(detected.source);
 
     // Register the terminal view
     this.registerView(VIEW_TYPE_TERMINAL, (leaf: WorkspaceLeaf) => {
@@ -188,5 +195,65 @@ export default class TerminalPlugin extends Plugin {
       const view = leaf.view as TerminalView;
       view.updateCopyOnSelect();
     }
+  }
+
+  /**
+   * Open the terminal panel (creating one if needed) and add a new tab whose
+   * shell is initialized with the given OMP theme regardless of saved settings.
+   */
+  async openTerminalWithOmpPreview(themeName: string): Promise<void> {
+    await this.activateTerminal();
+    // activateTerminal returns once the leaf is set up but the view may still
+    // be initializing — defer to next tick so getTabManager() is non-null.
+    setTimeout(() => {
+      const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_TERMINAL);
+      if (leaves.length === 0) return;
+      const view = leaves[0].view as TerminalView;
+      view.createNewTab({ ompPreviewTheme: themeName });
+    }, 100);
+  }
+
+  /**
+   * One-time auto-detect prompt: if oh-my-posh is on the system PATH and the
+   * user has not been asked yet, offer to enable it. Their choice is persisted
+   * so this never re-prompts.
+   */
+  private maybeOfferOmpEnable(source: "sandboxed" | "system" | null): void {
+    if (source !== "system") return;
+    if (this.settings.ohMyPoshEnabled) return;
+    if (this.settings.ohMyPoshAutoDetectChoice !== "pending") return;
+
+    const frag = document.createDocumentFragment();
+    const wrap = frag.createDiv();
+    wrap.createDiv({ text: "Oh My Posh detected on your system." });
+    wrap.createDiv({ text: "Enable it for new terminal tabs in this plugin?" });
+
+    const buttons = wrap.createDiv();
+    buttons.style.marginTop = "8px";
+    buttons.style.display = "flex";
+    buttons.style.gap = "8px";
+
+    const enableBtn = buttons.createEl("button", { text: "Enable" });
+    const dismissBtn = buttons.createEl("button", { text: "Not now" });
+
+    const notice = new Notice(frag, 0); // 0 = sticky until user clicks
+
+    enableBtn.addEventListener("click", () => {
+      void (async () => {
+        this.settings.ohMyPoshEnabled = true;
+        this.settings.ohMyPoshAutoDetectChoice = "accepted";
+        await this.saveSettings();
+        notice.hide();
+        new Notice("Oh My Posh enabled for new terminal tabs.");
+      })();
+    });
+
+    dismissBtn.addEventListener("click", () => {
+      void (async () => {
+        this.settings.ohMyPoshAutoDetectChoice = "dismissed";
+        await this.saveSettings();
+        notice.hide();
+      })();
+    });
   }
 }

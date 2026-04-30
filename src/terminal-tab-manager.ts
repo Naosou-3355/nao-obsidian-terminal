@@ -9,7 +9,14 @@ import { isObsidianDark } from "./themes";
 import type { TerminalPluginSettings } from "./settings";
 import type { NotificationSound } from "./settings";
 import type { BinaryManager } from "./binary-manager";
+import type { OhMyPoshManager } from "./oh-my-posh-manager";
+import type { OmpContext } from "./shell-integration";
 import type { IDisposable } from "@xterm/xterm";
+
+export interface CreateTabOptions {
+  /** Override the saved OMP theme for this tab only (used by Live preview). */
+  ompPreviewTheme?: string;
+}
 
 export const TAB_COLORS = [
   { name: "None", value: "" },
@@ -262,6 +269,7 @@ export class TerminalTabManager {
   private pluginDir: string;
   private binaryManager: BinaryManager;
   private themeRegistry: ThemeRegistry;
+  private ompManager: OhMyPoshManager;
   private onActiveChange?: () => void;
   private onTabsEmpty?: () => void;
   private dragSrcId: string | null = null;
@@ -276,6 +284,7 @@ export class TerminalTabManager {
     pluginDir: string,
     binaryManager: BinaryManager,
     themeRegistry: ThemeRegistry,
+    ompManager: OhMyPoshManager,
     onActiveChange?: () => void,
     onTabsEmpty?: () => void
   ) {
@@ -287,14 +296,16 @@ export class TerminalTabManager {
     this.pluginDir = pluginDir;
     this.binaryManager = binaryManager;
     this.themeRegistry = themeRegistry;
+    this.ompManager = ompManager;
     this.onActiveChange = onActiveChange;
     this.onTabsEmpty = onTabsEmpty;
   }
 
-  createTab(): TerminalSession {
+  createTab(opts?: CreateTabOptions): TerminalSession {
     sessionCounter++;
     const id = `terminal-${sessionCounter}`;
-    const name = `Terminal ${sessionCounter}`;
+    const baseName = `Terminal ${sessionCounter}`;
+    const name = opts?.ompPreviewTheme ? `[preview] ${baseName}` : baseName;
 
     // Create container for this session
     const containerEl = this.terminalHostEl.createDiv({ cls: "terminal-session" });
@@ -502,8 +513,10 @@ export class TerminalTabManager {
         return;
       }
 
+      const omp = this.resolveOmpContext(opts?.ompPreviewTheme);
+
       try {
-        pty.spawn(this.settings.shellPath, this.cwd, cols, rows);
+        pty.spawn(this.settings.shellPath, this.cwd, cols, rows, undefined, omp);
       } catch (err) {
         const message = err instanceof Error ? err.message : "unknown error";
         console.error("Terminal: failed to spawn shell", err);
@@ -626,6 +639,23 @@ export class TerminalTabManager {
     this.sessions = [];
     this.activeId = null;
     sessionCounter = 0;
+  }
+
+  /**
+   * Build an OmpContext for a new tab, or return undefined when OMP should not run.
+   * `previewTheme` (when set) overrides settings — used by the Live preview button.
+   */
+  private resolveOmpContext(previewTheme?: string): OmpContext | undefined {
+    if (!this.ompManager.isReady()) return undefined;
+
+    const themeName = previewTheme ?? (this.settings.ohMyPoshEnabled ? this.settings.ohMyPoshTheme : "");
+    if (!themeName) return undefined;
+
+    const binaryPath = this.ompManager.getBinaryPath();
+    if (!binaryPath) return undefined;
+
+    const themePath = this.ompManager.getThemePath(themeName);
+    return { binaryPath, themePath };
   }
 
   private notifyCompletion(session: TerminalSession, exitCode: number): void {

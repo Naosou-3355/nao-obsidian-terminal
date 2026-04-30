@@ -1,6 +1,6 @@
 import { FileSystemAdapter, ItemView, WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_TERMINAL } from "./constants";
-import { TerminalTabManager } from "./terminal-tab-manager";
+import { TerminalTabManager, type CreateTabOptions } from "./terminal-tab-manager";
 import type TerminalPlugin from "./main";
 
 export class TerminalView extends ItemView {
@@ -63,6 +63,7 @@ export class TerminalView extends ItemView {
       pluginDir,
       this.plugin.binaryManager,
       this.plugin.themeRegistry,
+      this.plugin.ompManager,
       undefined,
       () => this.leaf.detach()
     );
@@ -86,8 +87,8 @@ export class TerminalView extends ItemView {
     this.tabManager = null;
   }
 
-  createNewTab(): void {
-    this.tabManager?.createTab();
+  createNewTab(opts?: CreateTabOptions): void {
+    this.tabManager?.createTab(opts);
   }
 
   getTabManager(): TerminalTabManager | null {

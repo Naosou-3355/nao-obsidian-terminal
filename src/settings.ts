@@ -3,6 +3,8 @@ import type TerminalPlugin from "./main";
 
 export type NotificationSound = "beep" | "chime" | "ping" | "pop";
 
+export type OmpAutoDetectChoice = "pending" | "accepted" | "dismissed";
+
 export interface TerminalPluginSettings {
   shellPath: string;
   fontSize: number;
@@ -19,6 +21,9 @@ export interface TerminalPluginSettings {
   notifyOnCompletion: boolean;
   notificationSound: NotificationSound;
   notificationVolume: number;
+  ohMyPoshEnabled: boolean;
+  ohMyPoshTheme: string;
+  ohMyPoshAutoDetectChoice: OmpAutoDetectChoice;
 }
 
 export const DEFAULT_SETTINGS: TerminalPluginSettings = {
@@ -37,6 +42,9 @@ export const DEFAULT_SETTINGS: TerminalPluginSettings = {
   notifyOnCompletion: false,
   notificationSound: "beep",
   notificationVolume: 50,
+  ohMyPoshEnabled: false,
+  ohMyPoshTheme: "",
+  ohMyPoshAutoDetectChoice: "pending",
 };
 
 export class TerminalSettingTab extends PluginSettingTab {
@@ -366,6 +374,9 @@ export class TerminalSettingTab extends PluginSettingTab {
         });
       });
 
+    // --- Prompt theme (Oh My Posh) ---
+    this.renderOhMyPoshSection(containerEl);
+
     // --- Notifications ---
     new Setting(containerEl).setName("Notifications").setHeading();
 
@@ -414,5 +425,150 @@ export class TerminalSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Plugin version")
       .setDesc(`Nao's Terminal v${this.plugin.manifest.version}`);
+  }
+
+  private renderOhMyPoshSection(containerEl: HTMLElement): void {
+    new Setting(containerEl).setName("Prompt theme (Oh My Posh)").setHeading();
+
+    const omp = this.plugin.ompManager;
+    const status = omp.getStatus();
+    const source = omp.getSource();
+    const version = omp.getVersion();
+
+    let statusDesc: string;
+    if (status === "ready" && source === "sandboxed") {
+      statusDesc = `Installed (sandboxed) ${version ?? ""}`.trim();
+    } else if (status === "ready" && source === "system") {
+      statusDesc = `Detected on system ${version ?? ""}`.trim();
+    } else if (status === "downloading") {
+      statusDesc = `Downloading… ${omp.getStatusMessage()}`;
+    } else if (status === "error") {
+      statusDesc = `Error: ${omp.getStatusMessage()}`;
+    } else {
+      statusDesc = "Not installed";
+    }
+
+    new Setting(containerEl)
+      .setName("Status")
+      .setDesc(statusDesc);
+
+    new Setting(containerEl)
+      .setName("Install Oh My Posh")
+      .setDesc(
+        "Download the oh-my-posh binary and bundled themes into the plugin folder. Your system shell rc files are not touched."
+      )
+      .addButton((btn) => {
+        btn
+          .setButtonText(status === "downloading" ? "Downloading…" : "Install")
+          .setDisabled(status === "ready" || status === "downloading")
+          .onClick(async () => {
+            btn.setButtonText("Downloading…");
+            btn.setDisabled(true);
+            try {
+              await omp.install();
+              new Notice("Oh My Posh installed.");
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : String(err);
+              new Notice(`Failed to install Oh My Posh: ${msg}`);
+            }
+            this.display();
+          });
+      });
+
+    new Setting(containerEl)
+      .setName("Remove Oh My Posh")
+      .setDesc("Delete the sandboxed binary and themes from the plugin folder.")
+      .addButton((btn) => {
+        btn
+          .setButtonText("Remove")
+          .setDisabled(source !== "sandboxed")
+          .onClick(() => {
+            try {
+              omp.remove();
+              new Notice("Oh My Posh removed.");
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : String(err);
+              new Notice(`Failed to remove Oh My Posh: ${msg}`);
+            }
+            this.display();
+          });
+      });
+
+    new Setting(containerEl)
+      .setName("Enable Oh My Posh prompt")
+      .setDesc("New terminal tabs will use the selected theme. Existing tabs keep their current prompt.")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.ohMyPoshEnabled)
+          .setDisabled(status !== "ready")
+          .onChange(async (value) => {
+            this.plugin.settings.ohMyPoshEnabled = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    let themeDropdown: DropdownComponent | undefined;
+
+    const themeSetting = new Setting(containerEl)
+      .setName("Theme")
+      .setDesc(
+        "Browse themes at ohmyposh.dev/docs/themes. Most themes need a Nerd Font (e.g. MesloLGS NF) for icons to render."
+      );
+
+    themeSetting.addDropdown((dropdown) => {
+      themeDropdown = dropdown;
+      const themes = omp.listThemes();
+      if (themes.length === 0) {
+        dropdown.addOption("", "(no themes — install Oh My Posh first)");
+      } else {
+        for (const t of themes) dropdown.addOption(t, t);
+      }
+      const current = this.plugin.settings.ohMyPoshTheme;
+      if (current && themes.includes(current)) {
+        dropdown.setValue(current);
+      } else if (themes.length > 0) {
+        dropdown.setValue(themes[0]);
+      }
+      dropdown.onChange(async (value) => {
+        this.plugin.settings.ohMyPoshTheme = value;
+        await this.plugin.saveSettings();
+      });
+    });
+
+    themeSetting.addButton((btn) => {
+      btn
+        .setButtonText("Reload themes")
+        .setTooltip("Re-scan the themes folder")
+        .onClick(() => {
+          if (themeDropdown) {
+            themeDropdown.selectEl.empty();
+            const themes = omp.listThemes();
+            if (themes.length === 0) {
+              themeDropdown.addOption("", "(no themes — install Oh My Posh first)");
+            } else {
+              for (const t of themes) themeDropdown.addOption(t, t);
+            }
+            const current = this.plugin.settings.ohMyPoshTheme;
+            if (current && themes.includes(current)) themeDropdown.setValue(current);
+            else if (themes.length > 0) themeDropdown.setValue(themes[0]);
+          }
+          new Notice(`Oh My Posh: ${omp.listThemes().length} themes available.`);
+        });
+    });
+
+    themeSetting.addButton((btn) => {
+      btn
+        .setButtonText("Live preview")
+        .setTooltip("Open a new terminal tab using the selected theme without saving it")
+        .setDisabled(status !== "ready")
+        .onClick(async () => {
+          const selected = themeDropdown?.getValue() || this.plugin.settings.ohMyPoshTheme;
+          if (!selected) {
+            new Notice("Pick a theme first.");
+            return;
+          }
+          await this.plugin.openTerminalWithOmpPreview(selected);
+        });
+    });
   }
 }

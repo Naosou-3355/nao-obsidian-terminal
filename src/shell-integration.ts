@@ -88,20 +88,53 @@ interface ShellIntegrationResult {
   args: string[];
 }
 
+export interface OmpContext {
+  /** Absolute path to the oh-my-posh binary. */
+  binaryPath: string;
+  /** Absolute path to a `.omp.json` theme file. */
+  themePath: string;
+}
+
+/** Quote a path for POSIX shells using single quotes, escaping any embedded `'`. */
+function shQuote(s: string): string {
+  return `'${s.replace(/'/g, `'\\''`)}'`;
+}
+
+/** Quote a path for PowerShell using single quotes, escaping any embedded `'`. */
+function pwshQuote(s: string): string {
+  return `'${s.replace(/'/g, `''`)}'`;
+}
+
+/** Build the OMP init line appended to a shell's init script. */
+function ompInitLine(shell: "bash" | "zsh" | "pwsh", omp: OmpContext): string {
+  if (shell === "pwsh") {
+    return `& ${pwshQuote(omp.binaryPath)} init pwsh --config ${pwshQuote(omp.themePath)} | Invoke-Expression`;
+  }
+  const which = shell === "zsh" ? "zsh" : "bash";
+  return `eval "$(${shQuote(omp.binaryPath)} init ${which} --config ${shQuote(omp.themePath)})"`;
+}
+
 /**
  * Returns extra env vars and args to inject shell integration hooks.
  * Scripts are materialized to pluginDir/shell-integration/ on demand.
+ *
+ * When `omp` is provided, the OMP `init` eval is appended to the end of the
+ * per-shell init script so the prompt is rendered by oh-my-posh. The OSC 133
+ * hooks still run first.
  */
 export function getShellIntegration(
   shellPath: string,
-  pluginDir: string
+  pluginDir: string,
+  omp?: OmpContext
 ): ShellIntegrationResult {
   const lower = shellPath.toLowerCase();
   const scriptDir = joinPath(pluginDir, "shell-integration");
 
   if (Platform.isWin) {
     if (lower.includes("pwsh") || lower.includes("powershell")) {
-      const initPath = ensureScript(scriptDir, "pwsh-init.ps1", PWSH_SCRIPT);
+      const content = omp ? `${PWSH_SCRIPT}\n${ompInitLine("pwsh", omp)}\n` : PWSH_SCRIPT;
+      const filename = omp ? "pwsh-init-omp.ps1" : "pwsh-init.ps1";
+      const initPath = ensureScript(scriptDir, filename, content);
       return {
         env: {},
         args: ["-NoLogo", "-NoExit", "-File", initPath],
@@ -113,7 +146,9 @@ export function getShellIntegration(
 
   // macOS / Linux
   if (lower.includes("zsh") || lower.endsWith("/zsh")) {
-    const initFile = ensureScript(scriptDir, "zsh-init.zsh", ZSH_SCRIPT);
+    const content = omp ? `${ZSH_SCRIPT}\n${ompInitLine("zsh", omp)}\n` : ZSH_SCRIPT;
+    const filename = omp ? "zsh-init-omp.zsh" : "zsh-init.zsh";
+    const initFile = ensureScript(scriptDir, filename, content);
     const userZdotdir = process.env.ZDOTDIR || process.env.HOME || "";
     // zsh reads startup files from ZDOTDIR; point it to our directory and
     // provide forwarding scripts for all three per-user config files so that
@@ -131,7 +166,9 @@ export function getShellIntegration(
   }
 
   if (lower.includes("bash") || lower.endsWith("/bash") || lower.endsWith("/sh")) {
-    const initPath = ensureScript(scriptDir, "bash-init.sh", BASH_SCRIPT);
+    const content = omp ? `${BASH_SCRIPT}\n${ompInitLine("bash", omp)}\n` : BASH_SCRIPT;
+    const filename = omp ? "bash-init-omp.sh" : "bash-init.sh";
+    const initPath = ensureScript(scriptDir, filename, content);
     return {
       env: { BASH_ENV: initPath },
       args: [],

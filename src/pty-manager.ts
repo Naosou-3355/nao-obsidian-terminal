@@ -1,5 +1,5 @@
 import { Platform } from "obsidian";
-import { getShellIntegration } from "./shell-integration";
+import { getShellIntegration, type OmpContext } from "./shell-integration";
 
 interface IPtyProcess {
   pid: number;
@@ -102,7 +102,8 @@ export class PtyManager {
     cwd: string,
     cols: number,
     rows: number,
-    env?: Record<string, string>
+    env?: Record<string, string>,
+    omp?: OmpContext
   ): void {
     this.nodePty = loadNodePty(this.pluginDir);
 
@@ -111,8 +112,8 @@ export class PtyManager {
     validateShellPath(shell);
     const baseArgs = getShellArgs(shell);
 
-    // Inject shell integration hooks
-    const si = getShellIntegration(shell, this.pluginDir);
+    // Inject shell integration hooks (and OMP prompt init if provided)
+    const si = getShellIntegration(shell, this.pluginDir, omp);
     const args = si.args.length > 0 ? si.args : baseArgs;
 
     const ptyEnv = {
