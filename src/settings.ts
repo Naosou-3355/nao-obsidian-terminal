@@ -508,58 +508,138 @@ export class TerminalSettingTab extends PluginSettingTab {
       );
 
     let themeDropdown: DropdownComponent | undefined;
+    let downloadBtnRef: { setDisabled: (b: boolean) => void; setButtonText: (s: string) => void } | undefined;
+    let removeBtnRef: { setDisabled: (b: boolean) => void } | undefined;
+    let previewBtnRef: { setDisabled: (b: boolean) => void } | undefined;
 
     const themeSetting = new Setting(containerEl)
       .setName("Theme")
       .setDesc(
-        "Browse themes at ohmyposh.dev/docs/themes. Most themes need a Nerd Font (e.g. MesloLGS NF) for icons to render."
+        "Themes are listed from github.com/JanDeDobbeleer/oh-my-posh/tree/main/themes. Click \"Download theme\" to fetch the selected one. Most themes need a Nerd Font (e.g. MesloLGS NF) for icons."
       );
+
+    /** Refresh dropdown options + button enabled-states based on the latest online + local state. */
+    const repopulate = (online: string[]) => {
+      if (!themeDropdown) return;
+      themeDropdown.selectEl.empty();
+      if (online.length === 0) {
+        themeDropdown.addOption("", "(no themes available)");
+      } else {
+        for (const t of online) {
+          const downloaded = omp.isThemeDownloaded(t);
+          themeDropdown.addOption(t, downloaded ? `✓ ${t}` : t);
+        }
+      }
+      const current = this.plugin.settings.ohMyPoshTheme;
+      if (current && online.includes(current)) {
+        themeDropdown.setValue(current);
+      } else if (online.length > 0) {
+        themeDropdown.setValue(online[0]);
+      }
+      syncButtonStates();
+    };
+
+    const syncButtonStates = () => {
+      const selected = themeDropdown?.getValue() || "";
+      const downloaded = !!selected && omp.isThemeDownloaded(selected);
+      downloadBtnRef?.setDisabled(!selected || downloaded);
+      downloadBtnRef?.setButtonText(downloaded ? "Downloaded" : "Download theme");
+      removeBtnRef?.setDisabled(!downloaded);
+      previewBtnRef?.setDisabled(status !== "ready" || !downloaded);
+    };
 
     themeSetting.addDropdown((dropdown) => {
       themeDropdown = dropdown;
-      const themes = omp.listThemes();
-      if (themes.length === 0) {
-        dropdown.addOption("", "(no themes — install Oh My Posh first)");
+      // Seed dropdown with locally-downloaded themes so something shows immediately.
+      const local = omp.listThemes();
+      if (local.length === 0) {
+        dropdown.addOption("", "(loading themes…)");
       } else {
-        for (const t of themes) dropdown.addOption(t, t);
+        for (const t of local) dropdown.addOption(t, `✓ ${t}`);
       }
       const current = this.plugin.settings.ohMyPoshTheme;
-      if (current && themes.includes(current)) {
-        dropdown.setValue(current);
-      } else if (themes.length > 0) {
-        dropdown.setValue(themes[0]);
-      }
+      if (current && local.includes(current)) dropdown.setValue(current);
+
       dropdown.onChange(async (value) => {
         this.plugin.settings.ohMyPoshTheme = value;
         await this.plugin.saveSettings();
+        syncButtonStates();
       });
+
+      // Async-populate from GitHub
+      void omp.fetchAvailableThemes()
+        .then((online) => repopulate(online))
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          console.warn("Oh My Posh: failed to fetch online theme list", err);
+          new Notice(`Could not fetch theme list (offline?): ${msg}. Showing locally downloaded themes only.`);
+        });
     });
 
     themeSetting.addButton((btn) => {
+      downloadBtnRef = btn;
       btn
-        .setButtonText("Reload themes")
-        .setTooltip("Re-scan the themes folder")
-        .onClick(() => {
-          if (themeDropdown) {
-            themeDropdown.selectEl.empty();
-            const themes = omp.listThemes();
-            if (themes.length === 0) {
-              themeDropdown.addOption("", "(no themes — install Oh My Posh first)");
-            } else {
-              for (const t of themes) themeDropdown.addOption(t, t);
-            }
-            const current = this.plugin.settings.ohMyPoshTheme;
-            if (current && themes.includes(current)) themeDropdown.setValue(current);
-            else if (themes.length > 0) themeDropdown.setValue(themes[0]);
+        .setButtonText("Download theme")
+        .setTooltip("Download the selected .omp.json from GitHub")
+        .onClick(async () => {
+          const selected = themeDropdown?.getValue() || "";
+          if (!selected) return;
+          btn.setButtonText("Downloading…").setDisabled(true);
+          try {
+            await omp.downloadTheme(selected);
+            this.plugin.settings.ohMyPoshTheme = selected;
+            await this.plugin.saveSettings();
+            new Notice(`Oh My Posh: downloaded ${selected}.omp.json`);
+            // Repopulate so the new "✓" prefix shows up
+            const online = (await omp.fetchAvailableThemes().catch(() => null)) ?? omp.listThemes();
+            repopulate(online);
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err);
+            new Notice(`Failed to download theme: ${msg}`);
           }
-          new Notice(`Oh My Posh: ${omp.listThemes().length} themes available.`);
+          syncButtonStates();
+        });
+    });
+
+    themeSetting.addButton((btn) => {
+      removeBtnRef = btn;
+      btn
+        .setButtonText("Delete")
+        .setTooltip("Remove the locally-downloaded copy of this theme")
+        .onClick(() => {
+          const selected = themeDropdown?.getValue() || "";
+          if (!selected || !omp.isThemeDownloaded(selected)) return;
+          omp.removeTheme(selected);
+          new Notice(`Oh My Posh: removed ${selected}.omp.json`);
+          const online = omp.getCachedAvailableThemes();
+          repopulate(online ?? omp.listThemes());
         });
     });
 
     themeSetting.addButton((btn) => {
       btn
-        .setButtonText("Live preview")
-        .setTooltip("Open a new terminal tab using the selected theme without saving it")
+        .setButtonText("Refresh list")
+        .setTooltip("Re-fetch the online theme catalog")
+        .onClick(async () => {
+          try {
+            const online = await omp.fetchAvailableThemes(true);
+            repopulate(online);
+            new Notice(`Oh My Posh: ${online.length} themes available online.`);
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err);
+            new Notice(`Failed to refresh: ${msg}`);
+          }
+        });
+    });
+
+    const previewSetting = new Setting(containerEl)
+      .setName("Live preview")
+      .setDesc("Open a new terminal tab using the selected theme without saving it as the default. Theme must be downloaded first.");
+
+    previewSetting.addButton((btn) => {
+      previewBtnRef = btn;
+      btn
+        .setButtonText("Open preview tab")
         .setDisabled(status !== "ready")
         .onClick(async () => {
           const selected = themeDropdown?.getValue() || this.plugin.settings.ohMyPoshTheme;
@@ -567,8 +647,15 @@ export class TerminalSettingTab extends PluginSettingTab {
             new Notice("Pick a theme first.");
             return;
           }
+          if (!omp.isThemeDownloaded(selected)) {
+            new Notice(`Download ${selected} first.`);
+            return;
+          }
           await this.plugin.openTerminalWithOmpPreview(selected);
         });
     });
+
+    // Initial sync once all buttons exist.
+    syncButtonStates();
   }
 }

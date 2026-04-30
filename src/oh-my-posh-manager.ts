@@ -20,6 +20,7 @@ export class OhMyPoshManager {
   private version: string | null = null;
   private resolvedBinary: string | null = null;
   private callbacks: Set<(status: OmpStatus) => void> = new Set();
+  private availableThemesCache: string[] | null = null;
 
   private readonly fs: typeof import("fs");
   private readonly path: typeof import("path");
@@ -123,16 +124,7 @@ export class OhMyPoshManager {
       const binaryBuffer = Buffer.from(binaryResp.arrayBuffer);
       this.verifyChecksum(checksums, assetName, binaryBuffer);
 
-      // Download themes.zip
-      this.setStatus("downloading", "Downloading themes.zip...");
-      const themesResp = await requestUrl({
-        url: `${baseUrl}/themes.zip`,
-        contentType: "application/octet-stream",
-      });
-      const themesBuffer = Buffer.from(themesResp.arrayBuffer);
-      this.verifyChecksum(checksums, "themes.zip", themesBuffer);
-
-      // Write binary
+      // Write binary (themes are now downloaded on demand, not bundled)
       this.setStatus("downloading", "Installing...");
       this.fs.mkdirSync(this.binDir, { recursive: true });
       this.fs.writeFileSync(this.sandboxedBinary, binaryBuffer);
@@ -140,30 +132,8 @@ export class OhMyPoshManager {
         this.fs.chmodSync(this.sandboxedBinary, 0o755);
       }
 
-      // Extract themes
-      const tmpZip = this.path.join(this.os.tmpdir(), `omp-themes-${Date.now()}.zip`);
-      this.fs.writeFileSync(tmpZip, themesBuffer);
-
-      if (this.fs.existsSync(this.themesDir)) {
-        this.fs.rmSync(this.themesDir, { recursive: true, force: true });
-      }
+      // Ensure themes directory exists for later on-demand downloads
       this.fs.mkdirSync(this.themesDir, { recursive: true });
-
-      try {
-        if (process.platform === "win32") {
-          this.childProcess.execSync(
-            `powershell -NoProfile -Command "Expand-Archive -Path '${tmpZip}' -DestinationPath '${this.themesDir}' -Force"`,
-            { timeout: 30000 }
-          );
-        } else {
-          this.childProcess.execSync(
-            `unzip -o "${tmpZip}" -d "${this.themesDir}"`,
-            { timeout: 30000 }
-          );
-        }
-      } finally {
-        try { this.fs.unlinkSync(tmpZip); } catch { /* ignore */ }
-      }
 
       // Write manifest
       const manifest: OmpManifest = {
@@ -219,7 +189,7 @@ export class OhMyPoshManager {
     return this.path.join(this.themesDir, `${name}.omp.json`);
   }
 
-  /** Sorted list of bundled theme names (basename without `.omp.json`). */
+  /** Sorted list of locally-downloaded theme names (basename without `.omp.json`). */
   listThemes(): string[] {
     try {
       if (!this.fs.existsSync(this.themesDir)) return [];
@@ -230,6 +200,64 @@ export class OhMyPoshManager {
         .sort((a, b) => a.localeCompare(b));
     } catch {
       return [];
+    }
+  }
+
+  /** Whether the named theme is present on disk locally. */
+  isThemeDownloaded(name: string): boolean {
+    try {
+      return this.fs.existsSync(this.getThemePath(name));
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Fetch the list of theme names available online from
+   * github.com/JanDeDobbeleer/oh-my-posh/tree/main/themes.
+   * Cached in-memory after the first successful call.
+   */
+  async fetchAvailableThemes(forceRefresh = false): Promise<string[]> {
+    if (!forceRefresh && this.availableThemesCache) return this.availableThemesCache;
+
+    const apiUrl = `https://api.github.com/repos/${OMP_REPO}/contents/themes?ref=main`;
+    const resp = await requestUrl({ url: apiUrl });
+    const entries = resp.json as Array<{ name: string; type: string }>;
+    const names = entries
+      .filter((e) => e.type === "file" && e.name.endsWith(".omp.json"))
+      .map((e) => e.name.slice(0, -".omp.json".length))
+      .sort((a, b) => a.localeCompare(b));
+
+    this.availableThemesCache = names;
+    return names;
+  }
+
+  /** Last-fetched online theme list, or null if not fetched yet. */
+  getCachedAvailableThemes(): string[] | null {
+    return this.availableThemesCache;
+  }
+
+  /**
+   * Download a single `.omp.json` from the upstream repo into the local
+   * themes directory. Idempotent — overwrites if it already exists.
+   */
+  async downloadTheme(name: string): Promise<void> {
+    const url = `https://raw.githubusercontent.com/${OMP_REPO}/main/themes/${name}.omp.json`;
+    const resp = await requestUrl({ url });
+    if (resp.status < 200 || resp.status >= 300) {
+      throw new Error(`Failed to download theme '${name}': HTTP ${resp.status}`);
+    }
+    this.fs.mkdirSync(this.themesDir, { recursive: true });
+    this.fs.writeFileSync(this.getThemePath(name), resp.text, "utf-8");
+  }
+
+  /** Delete a single locally-downloaded theme. */
+  removeTheme(name: string): void {
+    try {
+      const p = this.getThemePath(name);
+      if (this.fs.existsSync(p)) this.fs.unlinkSync(p);
+    } catch {
+      // ignore
     }
   }
 
