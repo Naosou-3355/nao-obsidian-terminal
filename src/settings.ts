@@ -13,7 +13,6 @@ export interface TerminalPluginSettings {
   backgroundColor: string;
   cursorBlink: boolean;
   copyOnSelect: boolean;
-  cmdASelectAll: boolean;
   cmdEnterToSubmit: boolean;
   scrollback: number;
   ribbonIcon: string;
@@ -21,6 +20,7 @@ export interface TerminalPluginSettings {
   notifyOnCompletion: boolean;
   notificationSound: NotificationSound;
   notificationVolume: number;
+  startupCommand: string;
   ohMyPoshEnabled: boolean;
   ohMyPoshTheme: string;
   ohMyPoshAutoDetectChoice: OmpAutoDetectChoice;
@@ -34,7 +34,6 @@ export const DEFAULT_SETTINGS: TerminalPluginSettings = {
   backgroundColor: "",
   cursorBlink: true,
   copyOnSelect: false,
-  cmdASelectAll: false,
   cmdEnterToSubmit: false,
   scrollback: 5000,
   ribbonIcon: "terminal",
@@ -42,6 +41,7 @@ export const DEFAULT_SETTINGS: TerminalPluginSettings = {
   notifyOnCompletion: false,
   notificationSound: "beep",
   notificationVolume: 50,
+  startupCommand: "",
   ohMyPoshEnabled: false,
   ohMyPoshTheme: "",
   ohMyPoshAutoDetectChoice: "pending",
@@ -127,6 +127,19 @@ export class TerminalSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.shellPath)
           .onChange(async (value) => {
             this.plugin.settings.shellPath = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Startup command")
+      .setDesc("Run a command automatically when a new terminal tab opens (e.g. \"claude\", \"python3\"). Leave empty to do nothing.")
+      .addText((text) =>
+        text
+          .setPlaceholder("None")
+          .setValue(this.plugin.settings.startupCommand)
+          .onChange(async (value) => {
+            this.plugin.settings.startupCommand = value.trim();
             await this.plugin.saveSettings();
           })
       );
@@ -328,24 +341,17 @@ export class TerminalSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Cmd+A selects all")
-      .setDesc("⌘A (Mac) / Ctrl+A (Windows/Linux) selects all terminal text instead of sending the default keystroke")
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settings.cmdASelectAll).onChange(async (value) => {
-          this.plugin.settings.cmdASelectAll = value;
+      .setName("Submit shortcut")
+      .setDesc("Key that sends the command to the shell.")
+      .addDropdown((dropdown) => {
+        dropdown.addOption("enter", "Enter — default terminal behavior");
+        dropdown.addOption("cmd-enter", "Cmd+Enter (Mac) / Ctrl+Enter (Win/Linux) — Enter adds a line break");
+        dropdown.setValue(this.plugin.settings.cmdEnterToSubmit ? "cmd-enter" : "enter");
+        dropdown.onChange(async (value) => {
+          this.plugin.settings.cmdEnterToSubmit = value === "cmd-enter";
           await this.plugin.saveSettings();
-        })
-      );
-
-    new Setting(containerEl)
-      .setName("Cmd+Enter to submit")
-      .setDesc("Enter adds a line break; ⌘Enter (Mac) / Ctrl+Enter (Windows/Linux) submits the command")
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settings.cmdEnterToSubmit).onChange(async (value) => {
-          this.plugin.settings.cmdEnterToSubmit = value;
-          await this.plugin.saveSettings();
-        })
-      );
+        });
+      });
 
     new Setting(containerEl)
       .setName("Scrollback lines")

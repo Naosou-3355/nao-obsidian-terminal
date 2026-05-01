@@ -41,8 +41,6 @@ export interface TerminalSession {
   /** Disposables for parser handlers (cleaned up on tab close). */
   parserDisposables: IDisposable[];
   dragLabel: HTMLElement;
-  /** Absolute buffer row/col where user input starts (just after the prompt). */
-  inputStart: { x: number; y: number };
 }
 
 let sessionCounter = 0;
@@ -417,22 +415,6 @@ export class TerminalTabManager {
         return false;
       }
 
-      // Select all input: Cmd+A / Ctrl+A — selects from prompt end to cursor
-      if (mod && e.key === "a" && this.settings.cmdASelectAll) {
-        e.preventDefault();
-        const s = this.sessions.find((s) => s.id === id);
-        if (s) {
-          const buf = terminal.buffer.active;
-          const cursorAbsY = buf.baseY + buf.cursorY;
-          const startAbsY = s.inputStart.y;
-          const startX = s.inputStart.x;
-          const endX = buf.cursorX;
-          const length = (cursorAbsY - startAbsY) * terminal.cols + endX - startX;
-          if (length > 0) terminal.select(startX, startAbsY, length);
-        }
-        return false;
-      }
-
       return true;
     });
 
@@ -442,7 +424,6 @@ export class TerminalTabManager {
       mode2031: false,
       parserDisposables: [],
       dragLabel,
-      inputStart: { x: 0, y: 0 },
     };
 
     // Register terminal color reporting (OSC 10/11, Mode 2031)
@@ -524,22 +505,21 @@ export class TerminalTabManager {
         return;
       }
 
-      // Wire data: PTY -> xterm; debounce to record prompt-end position for Cmd+A
-      let inputStartTimer: ReturnType<typeof setTimeout> | null = null;
+      // Wire data: PTY -> xterm
       pty.onData((data: string) => {
         terminal.write(data);
-        if (inputStartTimer) clearTimeout(inputStartTimer);
-        inputStartTimer = setTimeout(() => {
-          const buf = terminal.buffer.active;
-          session.inputStart = { x: buf.cursorX, y: buf.baseY + buf.cursorY };
-          inputStartTimer = null;
-        }, 50);
       });
 
       // Wire data: xterm -> PTY
       terminal.onData((data: string) => {
         pty.write(data);
       });
+
+      // Run startup command once the shell prompt has settled
+      const cmd = this.settings.startupCommand;
+      if (cmd) {
+        setTimeout(() => { pty.write(cmd + "\r"); }, 500);
+      }
 
       pty.onExit(() => {
         this.closeTab(session.id);
